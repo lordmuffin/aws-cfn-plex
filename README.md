@@ -16,7 +16,7 @@ I will try and keep a running list of goals here for everyone's reference.
 - Pre-Package AMI with Packer - Include things like:
   - Plex
   - ENCFS - Self Encrypt with autogeneration on startup???
-  - ACD_CLI - Service to mount drive after ENCFS Encrypts
+  - ACD CLI - Service to mount drive after ENCFS Encrypts
   - 
 
 ## Installation

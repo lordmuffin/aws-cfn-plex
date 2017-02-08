@@ -15,6 +15,9 @@ Parameters:
       - t2.micro
       - c3.large
       - c3.xlarge
+  KeyName:
+    Description: Select an SSH Key for the instances. For security reaons you may want to upload your own and select that.
+    Type: AWS::EC2::KeyPair::KeyName
   S3TemplateBucket:
     Description: The name of the S3 Bucket that contains all our template resources
   S3TemplateKey:
@@ -89,5 +92,5 @@ Resources:
     Properties:
       ImageId: !GetAtt AMIInfo.Id
       InstanceType: !Ref InstanceType
-      KeyName: ?
+      KeyName: !Ref KeyName
 Outputs:
