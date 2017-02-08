@@ -7,9 +7,10 @@ This is for deploying Plex server form CFN.
 
 Show what the library does as concisely as possible, developers should be able to figure out **how** your project solves their problem by looking at the code example. Make sure the API you are showing off is obvious, and that your code is short and concise.
 
-## Motivation
+## Goals
 
-A short description of the motivation behind the creation and maintenance of the project. This should explain **why** the project exists.
+I will try and keep a running list of goals here for everyone's reference.  
+- Keep all keys secure and as unobtainable by AWS as possible.
 
 ## Installation
 
