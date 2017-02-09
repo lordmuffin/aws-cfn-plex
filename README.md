@@ -17,7 +17,7 @@ I will try and keep a running list of goals here for everyone's reference.
   - Plex
   - ENCFS - Self Encrypt with autogeneration on startup???
   - ACD CLI - Service to mount drive after ENCFS Encrypts
-  - 
+  - Create CFN Stack for Codecommit and build - pulls from the github repo
 
 ## Installation
 
