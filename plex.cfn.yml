@@ -90,19 +90,25 @@ Resources:
     Type: "AWS::EC2::Instance"
     Metadata:
       AWS::CloudFormation::Init:
-        commands:
-          ansible:
-            command: "pip install ansible"
+        configSets:
+          install: [ ansible ]
+        ansible:
+          packages:
+            yum:
+              httpd: []
+              python26-pip: []
+            python:
+              ansible: []
     Properties:
       ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPair
       SecurityGroupIds: [!Ref 'PlexSecurityGroup']
       UserData:
-        FN::Base64: !Sub |
+        Fn::Base64: !Sub |
           #!/bin/bash -xe
           yum install -y aws-cfn-bootstrap
-          /opt/aws/bin/cfn-init -v --stack { "Ref" : "AWS::StackName"} --resource WebServerInstance --configsets Install --region { "Ref" : "AWS::Region"}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Plex --configsets install --region ${AWS::Region}
       Tags:
         - Key: Name
           Value: Plex
