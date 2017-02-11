@@ -19,7 +19,6 @@ Metadata:
         default: Plex EC2 Instance Type
       PlexVersion:
         default: Plex Version to install
-
 Parameters:
   VPCID:
     Type: List<AWS::EC2::VPC::Id>
@@ -57,75 +56,28 @@ Parameters:
     Description: Plex Version to install ex. 1.3.4.3285-b46e0ea
     Type: String
     Default: "1.3.4.3285-b46e0ea"
-#Would like to make this automatic via lambda function
-# HVM ONLY - Perforance reasons
-Mappings:
-  AWSRegion2AMI:
-    us-east-1:
-      Ubuntu1604: ami-2c57433b
-      Amazon: ami-0b33d91d
-    us-east-2:
-      Ubuntu1604: ami-8ccd97e9
-      Amazon: ami-c55673a0
-    us-west-1:
-      Ubuntu1604: ami-fe26779e
-      Amazon: ami-f173cc91
-    us-west-2:
-      Ubuntu1604: ami-2709bd47
-      Amazon: ami-165a0876
 
 Resources:
-  # Create Plex Instance
-  PlexSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Enable HTTP and RDP
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '22'
-        ToPort: '22'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '443'
-        ToPort: '32400'
-        CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: Plex
   Plex:
-    Type: "AWS::EC2::Instance"
-    Metadata:
-      AWS::CloudFormation::Init:
-        configSets:
-          install: [ ansible ]
-        ansible:
-          packages:
-            yum:
-              httpd: []
-              python26-pip: []
-              git-all: []
-            python:
-              ansible: []
-          files:
-            /plex/plex.rpm:
-              source:
-                "Fn::Join": ["", ["https://downloads.plex.tv/plex-media-server/",
-                !Ref 'PlexVersion', "/plexmediaserver-", !Ref 'PlexVersion', ".x86_64.rpm"]]
-          commands:
-            plexinstall:
-              command:
-                "Fn::Join": ["", ["rpm -i /plex/plex.rpm"]]
+    Type: "AWS::CloudFormation:Stack"
     Properties:
-      ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
-      InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyPair
-      SecurityGroupIds: [!Ref 'PlexSecurityGroup']
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          yum install -y aws-cfn-bootstrap
-          yum update -y
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Plex --configsets install --region ${AWS::Region}
-      Tags:
-        - Key: Name
-          Value: Plex
+      TemplateURL:
+        Parameters:
+          EnvironmentName: !Ref VPCID
+          Subnets: !Ref SubnetID
+          SecurityGroup:
+  ALB:
+    Type: "AWS::CloudFormation:Stack"
+    Properties:
+      TemplateURL:
+        Parameters:
+          EnvironmentName: !Ref VPCID
+          Subnets: !Ref SubnetID
+          SecurityGroup:
+
+Outputs:
+  VPCID:
+    Description: VPC ID
+    Value: !Ref VPCID
+    Export:
+      Name: !Ref VPCID
