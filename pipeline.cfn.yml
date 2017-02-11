@@ -1,0 +1,299 @@
+Description: |
+  Pipeline for dev-base Infrastructure Deployment
+
+Parameters:
+  Name:
+    Type: String
+    AllowedPattern: "[-a-z0-9]+"
+    ConstraintDescription: "lower case letters, numbers, and dashes only"
+  UserName:
+    Type: String
+    AllowedPattern: "[-a-z0-9]+"
+    ConstraintDescription: "lower case letters, numbers, and dashes only"
+  BuildComputeType:
+    Type: String
+    Default: BUILD_GENERAL1_SMALL
+    AllowedValues: [BUILD_GENERAL1_SMALL, BUILD_GENERAL1_MEDIUM, BUILD_GENERAL1_LARGE]
+  BuildImage:
+    Type: String
+    Default: aws/codebuild/python:2.7.12
+    AllowedPattern: "[-A-Za-z0-9/._]+:[-A-Za-z0-9/._]+"
+  BuildBranch:
+    Type: String
+    Default: master
+
+Resources:
+  CodeCommitRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Sub "${Name}-repo"
+      RepositoryDescription: !Sub ${Name} Repository
+
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  CodeBuildServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.us-east-1.amazonaws.com"
+                - "codebuild.us-west-2.amazonaws.com"
+                - "codebuild.eu-west-1.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  CodeBuildServiceRolePolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CodeBuildPolicy"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: CloudWatchLogsPolicy
+          Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - "*"
+        - Sid: CodeCommitPolicy
+          Effect: Allow
+          Action:
+          - codecommit:GitPull
+          Resource:
+          - "*"
+        - Sid: S3GetObjectPolicy
+          Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectVersion
+          Resource:
+          - "*"
+        - Sid: S3PutObjectPolicy
+          Effect: Allow
+          Action:
+          - s3:PutObject
+          Resource:
+          - "*"
+        - Sid: FullAdminAccess
+          Effect: Allow
+          Action: "*"
+          Resource: "*"
+        - Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:PutItem
+          Effect: Allow
+          Resource: "*"
+      Roles:
+        - !Ref CodeBuildServiceRole
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${Name}-build"
+      Description: !Sub ${Name} Infrastructure CodeBuild Project
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: linuxContainer
+        ComputeType: !Ref BuildComputeType
+        Image: aws/codebuild/python:2.7.12
+        EnvironmentVariables:
+          - Name: BUCKET
+            Value: !Ref ArtifactBucket
+      Source:
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 480
+
+  CodePipelineServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+                - "cloudformation.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  CodePipelineServiceRolePolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CodePipelinePolicy"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - s3:GetObject
+            - s3:GetObjectVersion
+            - s3:GetBucketVersioning
+            Resource: "*"
+            Effect: Allow
+          - Action:
+            - s3:PutObject
+            Resource:
+            - arn:aws:s3:::codepipeline*
+            - arn:aws:s3:::elasticbeanstalk*
+            Effect: Allow
+          - Action:
+            - codecommit:CancelUploadArchive
+            - codecommit:GetBranch
+            - codecommit:GetCommit
+            - codecommit:GetUploadArchiveStatus
+            - codecommit:UploadArchive
+            Resource: "*"
+            Effect: Allow
+          - Action:
+            - elasticbeanstalk:*
+            - ec2:*
+            - elasticloadbalancing:*
+            - autoscaling:*
+            - cloudwatch:*
+            - s3:*
+            - sns:*
+            - cloudformation:*
+            - rds:*
+            - sqs:*
+            - ecs:*
+            - ssm:*
+            - ds:*
+            - kms:*
+            - iam:*
+            - lambda:*
+            Resource: "*"
+            Effect: Allow
+          - Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+            Resource: "*"
+            Effect: Allow
+          - Action:
+              - dynamodb:CreateTable
+              - dynamodb:DescribeTable
+              - dynamodb:ListTables
+            Resource: "*"
+            Effect: Allow
+      Roles:
+        - !Ref CodePipelineServiceRole
+
+  CodePipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    DependsOn: CodeCommitRepo
+    Properties:
+      Name: !Sub "${Name}-pipeline"
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                RepositoryName:  !Sub "${Name}-repo"
+                BranchName: !Ref BuildBranch
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: CreateChangeset
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                StackName: !Sub ${Name}
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                ChangeSetName: !Sub ${Name}-changeset
+                TemplatePath: BuildOutput::templates/master.cfn.yml
+                TemplateConfiguration: BuildOutput::config/dev.json
+                RoleArn: !GetAtt CodePipelineServiceRole.Arn
+                ParameterOverrides: !Sub |
+                  {
+                    "TemplateBucketName" : "${ArtifactBucket}"
+                  }
+              RunOrder: 1
+            - Name: ExecuteChangeset
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                StackName: !Sub ${Name}
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub ${Name}-changeset
+              RunOrder: 2
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+  UserCreation:
+    Type: "AWS::IAM::User"
+    Properties:
+      UserName: !Ref UserName
+      Policies:
+        - PolicyName: AWSCodeCommitPowerUser
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - codecommit:BatchGetRepositories
+              - codecommit:CreateBranch
+              - codecommit:CreateRepository
+              - codecommit:Get*
+              - codecommit:GitPull
+              - codecommit:GitPush
+              - codecommit:List*
+              - codecommit:Put*
+              - codecommit:Test*
+              - codecommit:Update*
+              Resource: "*"
+Outputs:
+  CodeCommitRepo:
+    Value: !Ref CodeCommitRepo
+  CodePipeline:
+    Value: !Ref CodePipeline
+  CodeBuildProject:
+    Value: !Ref CodeBuildProject
+  ArtifactBucket:
+    Value: !Ref ArtifactBucket

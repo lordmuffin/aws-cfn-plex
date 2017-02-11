@@ -1,0 +1,15 @@
+{
+  "Parameters" : {
+    "AvailabilityZones": "us-east-1a,us-east-1b",
+    "VPCCIDR": "172.30.172.0/22",
+    "PrivateSubnet1ACIDR": "172.30.172.0/24",
+    "PrivateSubnet1BCIDR": "172.30.173.0/24",
+    "PublicSubnet1ACIDR": "172.30.175.0/25",
+    "PublicSubnet1BCIDR": "172.30.175.128/25",
+    "Name": "dev-base",
+    "AdminPassword": "P@$$W0rd1",
+    "KeyPairName": "dev",
+    "VPCS3BucketName": "dev-vpcstack",
+    "SourceCidrForRDP": "0.0.0.0/0"
+  }
+}

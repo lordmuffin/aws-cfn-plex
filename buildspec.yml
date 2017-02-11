@@ -1,0 +1,14 @@
+version: 0.1
+
+environment_variables:
+  plaintext:
+    BUCKET: updateme
+    PREFIX: latest
+
+phases:
+  post_build:
+    commands:
+      - aws s3 sync . s3://$BUCKET/$PREFIX/
+artifacts:
+  files:
+    - "**/*"
