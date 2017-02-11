@@ -1,6 +1,19 @@
+AWSTemplateFormatVersion: "2010-09-09"
 Description: |
-  Pipeline for dev-base Infrastructure Deployment
-
+  Pipeline for Plex Infrastructure Deployment
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Pipeline Configuration
+      Parameters: [Name, UserName, GitHubOAuthToken]
+    ParameterLabels:
+      Name:
+        default: Name of Pipeline and future stack prefixes
+      UserName:
+        default: User to create in IAM
+      GitHubOAuthToken:
+        default: Your GitHub generated token.
 Parameters:
   Name:
     Type: String
@@ -18,17 +31,23 @@ Parameters:
     Type: String
     Default: aws/codebuild/python:2.7.12
     AllowedPattern: "[-A-Za-z0-9/._]+:[-A-Za-z0-9/._]+"
-  BuildBranch:
+  GitHubOwner:
+    Description: GitHub account username.
+    Type: String
+    Default: lordmuffin
+  GitHubRepo:
+    Description: GitHub repo name.
+    Type: String
+    Default: aws-cfn-plex
+  GitHubBranch:
+    Description: The branch that will trigger build/deploy.
     Type: String
     Default: master
-
+  GitHubOAuthToken:
+    Description: OAuth or personal access token.
+    Type: String
+    NoEcho: True
 Resources:
-  CodeCommitRepo:
-    Type: AWS::CodeCommit::Repository
-    Properties:
-      RepositoryName: !Sub "${Name}-repo"
-      RepositoryDescription: !Sub ${Name} Repository
-
   ArtifactBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -101,7 +120,7 @@ Resources:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: !Sub "${Name}-build"
-      Description: !Sub ${Name} Infrastructure CodeBuild Project
+      Description: !Sub ${Name} CodeBuild Project
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
         Type: CODEPIPELINE
@@ -203,14 +222,16 @@ Resources:
             - Name: SourceAction
               ActionTypeId:
                 Category: Source
-                Owner: AWS
+                Owner: ThirdParty
                 Version: 1
-                Provider: CodeCommit
+                Provider: GitHub
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
-                RepositoryName:  !Sub "${Name}-repo"
-                BranchName: !Ref BuildBranch
+                Owner: !Ref GitHubOwner
+                Repo: !Ref GitHubRepo
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubOAuthToken
               RunOrder: 1
         - Name: Build
           Actions:
@@ -243,7 +264,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName: !Sub ${Name}-changeset
                 TemplatePath: BuildOutput::templates/master.cfn.yml
-                TemplateConfiguration: BuildOutput::config/dev.json
+                TemplateConfiguration: BuildOutput::config/config.yml
                 RoleArn: !GetAtt CodePipelineServiceRole.Arn
                 ParameterOverrides: !Sub |
                   {

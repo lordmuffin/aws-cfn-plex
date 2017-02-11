@@ -65,15 +65,14 @@ Resources:
         Parameters:
           EnvironmentName: !Ref VPCID
           Subnets: !Ref SubnetID
-          SecurityGroup:
-  ALB:
-    Type: "AWS::CloudFormation:Stack"
-    Properties:
-      TemplateURL:
-        Parameters:
-          EnvironmentName: !Ref VPCID
-          Subnets: !Ref SubnetID
-          SecurityGroup:
+  #ALB:
+  #  Type: "AWS::CloudFormation:Stack"
+  #  Properties:
+  #    TemplateURL:
+  #      Parameters:
+  #        EnvironmentName: !Ref VPCID
+  #        Subnets: !Ref SubnetID
+  #        SecurityGroup:
 
 Outputs:
   VPCID:
