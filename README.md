@@ -13,7 +13,9 @@ I will try and keep a running list of goals here for everyone's reference.
 - Keep all keys secure and as unobtainable by AWS as possible.
   - Use AWS KMS probably - Seems secure enough based on their Policies?
   - Allow adding public key to CFM for auto-injection into SSH?
-- Pre-Package AMI with Packer - Include things like:
+- Use CloudFormation to deploy base ami and kickstart ansible.
+  - Pull amazon playbook from GIT, allows for bootstrap to be more dynamic?
+- Use Ansible to install the following:
   - Plex
   - ENCFS - Self Encrypt with autogeneration on startup???
   - ACD CLI - Service to mount drive after ENCFS Encrypts

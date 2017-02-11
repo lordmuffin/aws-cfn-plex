@@ -1,0 +1,103 @@
+# This is the Plex CFN - May run more templates from here - but most likely leverage Ansible from here on out
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Plex CloudFormation templates
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: VPC & Network Configuration
+      Parameters: [VPCID, SubnetID]
+    - Label:
+        default: Plex Configuration
+      Parameters: [KeyPair, InstanceType]
+    ParameterLabels:
+      VPCID:
+        default: VPC ID
+      SubnetID:
+        default: Subnet ID
+      InstanceType:
+        default: Plex EC2 Instance Type
+
+Parameters:
+  VPCID:
+    Type: List<AWS::EC2::VPC::Id>
+  SubnetID:
+    Description: SubnetID to deploy Plex
+    Type: List<AWS::EC2::Subnet::Id>
+  InstanceType:
+    Description: Amazon EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t1.micro, t2.micro, t2.small, t2.medium, m1.small, m1.medium,
+      m1.large, m1.xlarge, m2.xlarge, m2.2xlarge, m2.4xlarge, m3.medium, m3.large,
+      m3.xlarge, m3.2xlarge, m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge,
+      c1.medium, c1.xlarge, c3.large, c3.xlarge, c3.2xlarge, c3.4xlarge, c3.8xlarge,
+      c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, g2.2xlarge, r3.large,
+      r3.xlarge, r3.2xlarge, r3.4xlarge, r3.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge,
+      i2.8xlarge, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, hi1.4xlarge, hs1.8xlarge,
+      cr1.8xlarge, cc2.8xlarge, cg1.4xlarge]
+    ConstraintDescription: must be a valid EC2 instance type.
+  KeyPair:
+    Description: Select an SSH Key for the instances. For security reaons you may want to upload your own and select that.
+    Type: AWS::EC2::KeyPair::KeyName
+  OperatingSystem:
+    Type: String
+    AllowedValues: [Ubuntu1604, Amazon]
+    Default: Amazon
+  S3TemplateBucket:
+    Type: String
+    Description: The name of the S3 Bucket that contains all our template resources
+  S3TemplateKey:
+    Description: The url for this git package
+    Type: String
+    Default: "https://github.com/lordmuffin/aws-cfn-plex.git"
+#Would like to make this automatic via lambda function
+# HVM ONLY - Perforance reasons
+Mappings:
+  AWSRegion2AMI:
+    us-east-1:
+      Ubuntu1604: ami-2c57433b
+      Amazon: ami-0b33d91d
+    us-east-2:
+      Ubuntu1604: ami-8ccd97e9
+      Amazon: ami-c55673a0
+    us-west-1:
+      Ubuntu1604: ami-fe26779e
+      Amazon: ami-f173cc91
+    us-west-2:
+      Ubuntu1604: ami-2709bd47
+      Amazon: ami-165a0876
+
+Resources:
+  # Create Plex Instance
+  PlexSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP and RDP
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Plex
+  Plex:
+    Type: "AWS::EC2::Instance"
+    Metadata:
+      AWS::CloudFormation::Init:
+        commands:
+          ansible:
+            command: "pip install ansible"
+    Properties:
+      ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPair
+      SecurityGroupIds: [!Ref 'PlexSecurityGroup']
+      Tags:
+        - Key: Name
+          Value: Plex
