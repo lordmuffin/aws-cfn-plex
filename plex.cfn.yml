@@ -98,6 +98,11 @@ Resources:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPair
       SecurityGroupIds: [!Ref 'PlexSecurityGroup']
+      UserData:
+        FN::Base64: !Sub |
+          #!/bin/bash -xe
+          yum install -y aws-cfn-bootstrap
+          /opt/aws/bin/cfn-init -v --stack { "Ref" : "AWS::StackName"} --resource WebServerInstance --configsets Install --region { "Ref" : "AWS::Region"}
       Tags:
         - Key: Name
           Value: Plex
