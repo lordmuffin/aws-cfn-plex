@@ -12,8 +12,6 @@ Metadata:
         default: Name of Pipeline and future stack prefixes
       UserName:
         default: User to create in IAM
-      GitHubOAuthToken:
-        default: Your GitHub generated token.
 Parameters:
   Name:
     Type: String
@@ -43,10 +41,6 @@ Parameters:
     Description: The branch that will trigger build/deploy.
     Type: String
     Default: master
-  GitHubOAuthToken:
-    Description: OAuth or personal access token.
-    Type: String
-    NoEcho: True
 Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
@@ -123,7 +117,7 @@ Resources:
       Description: !Sub ${Name} CodeBuild Project
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
-        Type: CODEPIPELINE
+        Type: no_artifacts
       Environment:
         Type: linuxContainer
         ComputeType: !Ref BuildComputeType
@@ -132,7 +126,8 @@ Resources:
           - Name: BUCKET
             Value: !Ref ArtifactBucket
       Source:
-        Type: CODEPIPELINE
+        Type: S3
+        Location: ${!Ref ArtifactBucket}, "/", ${!Ref GitHubRepo}, ".zip"
       TimeoutInMinutes: 480
 
   CodePipelineServiceRole:
@@ -212,7 +207,6 @@ Resources:
 
   CodePipeline:
     Type: "AWS::CodePipeline::Pipeline"
-    DependsOn: CodeCommitRepo
     Properties:
       Name: !Sub "${Name}-pipeline"
       RoleArn: !GetAtt CodePipelineServiceRole.Arn
@@ -222,17 +216,14 @@ Resources:
             - Name: SourceAction
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
+                Owner: AWS
                 Version: 1
-                Provider: GitHub
+                Provider: S3
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
-                Owner: !Ref GitHubOwner
-                Repo: !Ref GitHubRepo
-                Branch: !Ref GitHubBranch
-                OAuthToken: !Ref GitHubOAuthToken
-              RunOrder: 1
+                S3Bucket: !Ref ArtifactBucket
+                S3ObjectKey: !Sub ${GitHubRepo}.zip
         - Name: Build
           Actions:
             - Name: Build
@@ -309,9 +300,92 @@ Resources:
               - codecommit:Test*
               - codecommit:Update*
               Resource: "*"
+  GitHubPullResourceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: GitHubPullResourcePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - S3:PutObject
+                Resource: "*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  GitHubPullResourceFunction:
+    Type: "AWS::Lambda::Function"
+    DependsOn: GitHubPullResourceRole
+    Properties:
+      FunctionName: GitHubPullResourceFunction
+      Code:
+        ZipFile: |
+          import urllib2
+          import boto3
+          import sys
+          import json
+          import cfnresponse
+          s3 = boto3.resource('s3')
+
+          def lambda_handler(event, context):
+              print "event.dump = " + json.dumps(event)
+              # If nto valid cloudformation custom resource call
+
+
+              print "test"
+              if not event['bucket_name'] or not event['git_url'] or not event['key']:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, "Bucket Name, Git URL and Key are all required.", '')
+                  return
+
+              response_status = cfnresponse.SUCCESS
+              results = {}
+
+              try:
+
+                  for keys,values in event.items():
+                      if "bucket_name" in keys:
+                          bucket_name = values
+                      if "git_url" in keys:
+                          git_url = values
+                      if "key" in keys:
+                          key = values
+                  response = urllib2.urlopen (git_url.encode('utf-8'))
+                  zipcontent = response.read()
+                  s3.Bucket(bucket_name).put_object(Key=key , Body=zipcontent)
+              except Exception as e:
+                  print # coding=utf-8
+
+              finally:
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS)
+
+      Description: Clone GitHub Repository to S3
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt GitHubPullResourceRole.Arn
+      Runtime: python2.7
+      Timeout: 5
+  GitHubPull:
+    Type: Custom::GitHubPullResourceFunction
+    DependsOn: GitHubPullResourceFunction
+    Properties:
+      ServiceToken: !GetAtt GitHubPullResourceFunction.Arn
+      bucket_name: !Ref ArtifactBucket
+      git_url: !Join ["", ["https://github.com/", !Ref GitHubOwner, !Ref GitHubRepo, "/archive/master.zip"]]
+      key: !Ref GitHubRepo
 Outputs:
-  CodeCommitRepo:
-    Value: !Ref CodeCommitRepo
+  GitHubRepo:
+    Value: !Ref GitHubRepo
   CodePipeline:
     Value: !Ref CodePipeline
   CodeBuildProject:
