@@ -31,7 +31,7 @@ def lambda_handler(event, context):
                 key = values
         response = urllib2.urlopen (git_url.encode('utf-8'))
         zipcontent = response.read()
-        s3.Bucket(bucket_name).put_object(Key='(key)', Body='(zipcontent)')
+        s3.Bucket(bucket_name).put_object(Key=key, Body=zipcontent)
     except Exception as e:
         print # coding=utf-8
 
