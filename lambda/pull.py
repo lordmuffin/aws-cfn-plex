@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Written by: Andrew Jackson
 # This is used to pull repo from github and drop to S3
 import urllib2
