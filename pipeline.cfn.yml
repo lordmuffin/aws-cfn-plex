@@ -255,7 +255,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName: !Sub ${Name}-changeset
                 TemplatePath: BuildOutput::templates/master.cfn.yml
-                TemplateConfiguration: BuildOutput::config/config.yml
+                TemplateConfiguration: BuildOutput::config/config.json
                 RoleArn: !GetAtt CodePipelineServiceRole.Arn
                 ParameterOverrides: !Sub |
                   {
