@@ -65,7 +65,7 @@ Resources:
   Plex:
     Type: "AWS::CloudFormation:Stack"
     Properties:
-      TemplateURL: !Join [/, 'S3TemplateBucketUrl', !Ref 'S3TemplateBucket', templates/master.cfn.yml]]
+      TemplateURL: !Join [/, 'S3TemplateBucketUrl', !Ref 'S3TemplateBucket', templates/plex.cfn.yml]]
         Parameters:
           EnvironmentName: !Ref VPCID
           Subnets: !Ref SubnetID
