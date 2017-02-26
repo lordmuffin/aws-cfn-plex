@@ -44,7 +44,7 @@ Parameters:
   VersionDownload:
     Description: Version Zip to download.
     Type: String
-    Default: "1"
+    Default: "1.1"
 Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
@@ -229,7 +229,7 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 S3Bucket: !Ref ArtifactBucket
-                S3ObjectKey: !Sub ${GitHubRepo}.zip
+                S3ObjectKey: !Sub ${VersionDownload}.zip
         - Name: Build
           Actions:
             - Name: Build
@@ -371,7 +371,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt GitHubPullResourceFunction.Arn
       bucket_name: !Ref ArtifactBucket
-      git_url: !Join ["", ["https://github.com/", !Ref GitHubOwner, "/", !Ref GitHubRepo, "/archive/master.zip"]]
+      git_url: !Join ["", ["https://github.com/", !Ref GitHubOwner, "/", !Ref GitHubRepo, "/raw/master/v", !Ref VersionDownload, ".zip"]]
       key: !Sub ${VersionDownload}.zip
 Outputs:
   GitHubRepo:
