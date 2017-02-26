@@ -1,7 +1,0 @@
-Parameters:
-  AvailabilityZones: "us-east-1a,us-east-1b"
-  VPCCIDR: "172.31.0.1"
-  Name: "Plex"
-  KeyPairName: "apj"
-  S3BucketName: "plex-media"
-  SourceCidrForRDP: 0.0.0.0/0
