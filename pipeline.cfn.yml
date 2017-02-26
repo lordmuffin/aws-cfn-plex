@@ -41,11 +41,17 @@ Parameters:
     Description: The branch that will trigger build/deploy.
     Type: String
     Default: master
+  VersionDownload:
+    Description: Version Zip to download.
+    Type: String
+    Default: "1"
 Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-
+    Properties:
+      BucketName: !Sub ${Name}-artifacts
+      VersioningConfiguration:
+        Status: Enabled
   CodeBuildServiceRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -366,7 +372,7 @@ Resources:
       ServiceToken: !GetAtt GitHubPullResourceFunction.Arn
       bucket_name: !Ref ArtifactBucket
       git_url: !Join ["", ["https://github.com/", !Ref GitHubOwner, "/", !Ref GitHubRepo, "/archive/master.zip"]]
-      key: !Ref GitHubRepo
+      key: !Sub ${VersionDownload}.zip
 Outputs:
   GitHubRepo:
     Value: !Ref GitHubRepo
