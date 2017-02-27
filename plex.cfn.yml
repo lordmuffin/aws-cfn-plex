@@ -104,6 +104,7 @@ Resources:
               httpd: []
               python26-pip: []
               git-all: []
+              encfs: []
             python:
               ansible: []
           files:
@@ -115,6 +116,15 @@ Resources:
             plexinstall:
               command:
                 "Fn::Join": ["", ["rpm -i /plex/plex.rpm"]]
+            plexstartup:
+              command:
+                "Fn::Join": ["", ["chkconfig --add plexmediaserver && chkconfig plexmediaserver on"]]
+            clonegitrepo:
+              command:
+                "Fn::Join": ["", ["git clone https://github.com/lordmuffin/aws-cfn-plex.git /plex/aws-cfn-plex"]]
+            ansibleplaybook:
+              command:
+                "Fn::Join": ["", ["ansible-playbook /plex/aws-cfn-plex/playbooks/plex.yml"]]
     Properties:
       ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
       InstanceType: !Ref InstanceType

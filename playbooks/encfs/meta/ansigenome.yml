@@ -1,0 +1,24 @@
+---
+
+ansigenome_info:
+  github_url: "https://github.com/debops/ansible-encfs"
+  git_branch: "master"
+  galaxy_id: "1562"
+
+  beta: True
+  travis: True
+
+  license_url: 'https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)'
+
+  authors:
+    - name:  'Maciej Delmanowski'
+      url: ''
+      email: 'drybjed@gmail.com'
+      twitter: 'drybjed'
+      github: 'drybjed'
+
+  synopsis: |
+    This role allows you to create and manage directories
+    using [EncFS](https://en.wikipedia.org/wiki/EncFS), FUSE-based encrypted
+    virtual filesystem.
+
