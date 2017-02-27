@@ -104,7 +104,9 @@ Resources:
               httpd: []
               python26-pip: []
               git-all: []
-              encfs: []
+              fuse: []
+              fuse-devel: []
+              openssl-devel: []
             python:
               ansible: []
           files:
@@ -122,9 +124,16 @@ Resources:
             clonegitrepo:
               command:
                 "Fn::Join": ["", ["git clone https://github.com/lordmuffin/aws-cfn-plex.git /plex/aws-cfn-plex"]]
-            ansibleplaybook:
+            cloneencfsrepo:
               command:
-                "Fn::Join": ["", ["ansible-playbook /plex/aws-cfn-plex/playbooks/plex.yml"]]
+                "Fn::Join": ["", ["git clone https://github.com/vgough/encfs.git /plex/encfs"]]
+            encfsbuild:
+              command:
+                "Fn::Join": ["", ["cd /plex/encfs && mkdir build && cd build && cmake .. && make && sudo make install"]]
+#            ansibleplaybook:
+#              command:
+#                "Fn::Join": ["", ["ansible-playbook /plex/aws-cfn-plex/playbooks/plex.yml"]]
+
     Properties:
       ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
       InstanceType: !Ref InstanceType
@@ -135,6 +144,7 @@ Resources:
           #!/bin/bash -xe
           yum install -y aws-cfn-bootstrap
           yum update -y
+          yum group install "Development Tools" -y
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Plex --configsets install --region ${AWS::Region}
       Tags:
         - Key: Name
