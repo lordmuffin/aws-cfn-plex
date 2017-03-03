@@ -265,7 +265,7 @@ Resources:
                 RoleArn: !GetAtt CodePipelineServiceRole.Arn
                 ParameterOverrides: !Sub |
                   {
-                    "TemplateBucketName" : "${ArtifactBucket}"
+                    "S3TemplateBucket" : "${ArtifactBucket}"
                   }
               RunOrder: 1
             - Name: ExecuteChangeset
