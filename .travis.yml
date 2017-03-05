@@ -1,0 +1,14 @@
+language: python
+python:
+- '2.7'
+script: echo "Build"
+deploy:
+  provider: lambda
+  function_name: aws-lambda-git
+  region: us-east-1
+  role: arn:aws:iam::399112729337:role/s3
+  runtime: python2.7
+  handler_name: handler
+  access_key_id: AKIAJQHVLV67I2UCUGTQ
+  secret_access_key:
+    secure: ifxKmogj6OTiXcPSdCa8rNbiWKSh2fVqACBXmfdxcvcCIq9ZKYukPJyDB+ZQxObu03C4cqgwDHB54gOj2QKhyAWa+l8LRh9RKBVkqrfriC702i9GjRn6b00aDR3YmBgcPKmh/mQmHBnSnAdWFD3kXmilQnOaz+xIAcq6vGqYbEurwAOpO/Oidjl3ORZ4pZx6An1Md6qnV7HWxmeVBJu0g2xA6j/8+oaVE9RU1rb7jympMKz/O1a5kKjGRaTTaQJ3A24nxLxF9u8ydOw9vpsYhAizMBvnC/1VfAsRSbk1Gvs00QhSBuGxIiPFtP/om5sZkc7vSP/KVCdj2qauXzj81AK8ilcc97h5QY34zRmCee4Jwlbjv+MldZ8KO2PLm8Rehswan3NsLfckW9HeCg3eHurxDu4fXzbBihLWuQI1UZ8ZQDKLdlYpqXFZibcNanDDBgOraLilNFS/FzQxQeuQMHVzpoKneWgq3pmBbR9TVQuNc31UIvINPrFtzo1Hz/A1M34Ejik9YaQTG82F93wHAI1buKGI5apnRysRL8rxees1vd/a63VL0P5rTCeIjj1oSNEGv7XBp2UC3hZP7/jDkuIs1TXvZ0BGwOELnCAUKlWrazTgjO8RG0rDzbpNtShWrd3aHGa8R/p4jo8nWET19yX8Y+Og2MkkqDdvNA5uZG8=
