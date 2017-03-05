@@ -1,10 +1,7 @@
 #!/usr/bin/python
 # Written by: Andrew Jackson
 # This is used to pull repo from github and drop to S3
-import urllib2
 import boto3
-import sys
-import json
 import git
 import os
 import shutil

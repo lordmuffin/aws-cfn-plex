@@ -1,6 +1,4 @@
 boto3
-sys
-json
 git
 os
 shutil
