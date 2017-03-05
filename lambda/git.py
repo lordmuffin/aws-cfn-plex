@@ -3,7 +3,6 @@
 # This is used to pull repo from github and drop to S3
 import boto3
 import git
-import os
 import shutil
 s3 = boto3.resource('s3')
 
