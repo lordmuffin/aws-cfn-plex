@@ -1,4 +1,3 @@
-urllib2
 boto3
 sys
 json
