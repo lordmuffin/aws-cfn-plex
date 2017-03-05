@@ -6,7 +6,7 @@ deploy:
   provider: lambda
   function_name: aws-lambda-git
   region: us-east-1
-  role: arn:aws:iam::399112729337:role/s3
+  role: arn:aws:iam::399112729337:role/lambda_basic_execution
   runtime: python2.7
   handler_name: handler
   access_key_id: AKIAJQHVLV67I2UCUGTQ
