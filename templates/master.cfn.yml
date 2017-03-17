@@ -62,6 +62,16 @@ Parameters:
     Default: "1.3.4.3285-b46e0ea"
 
 Resources:
+  CredstashStack:
+   Type: AWS::CloudFormation::Stack
+   Properties:
+     TemplateURL: !Sub
+       - ${S3Url}/${TemplateBucketName}/${TemplateBucketPrefix}/templates/credstash.cfn.yml
+       - {S3Url: !FindInMap [AWSInfoRegionMap, !Ref 'AWS::Region', TemplateBucketS3URL]}
+     Parameters:
+       ParentStackName: !Ref "AWS::StackName"
+       TemplateBucketName: !Ref TemplateBucketName
+       TemplateBucketPrefix: !Ref TemplateBucketPrefix
   Plex:
     Type: "AWS::CloudFormation:Stack"
     Properties:

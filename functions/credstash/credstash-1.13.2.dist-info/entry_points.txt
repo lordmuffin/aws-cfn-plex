@@ -1,0 +1,3 @@
+[console_scripts]
+credstash = credstash:main
+

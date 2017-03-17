@@ -1,0 +1,20 @@
+Metadata-Version: 2.0
+Name: credstash
+Version: 1.13.2
+Summary: A utility for managing secrets in the cloud using AWS KMS and DynamoDB
+Home-page: https://github.com/LuminalOSS/credstash
+Author: UNKNOWN
+Author-email: UNKNOWN
+License: Apache2
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: Apache Software License
+Requires-Dist: boto3 (>=1.1.1)
+Requires-Dist: cryptography (>=1.5,<2.0)
+Provides-Extra: YAML
+Requires-Dist: PyYAML (>=3.10); extra == 'YAML'
+
+UNKNOWN
+
+

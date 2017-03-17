@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: KMS Key and DynamoDB Table for Credstash
+Parameters:
+  ParentStackName:
+    Description: Name of parent stack
+    Type: String
+    MinLength: 3
+  EnableKeyRotation:
+    Description: Enable automatic annual key rotation of KMS key
+    Type: String
+    AllowedValues: [true, false]
+    Default: true
+  ReadCapacityUnits:
+    Type: Number
+    Default: 5
+    MinValue: 1
+  WriteCapacityUnits:
+    Type: Number
+    Default: 5
+    MinValue: 1
+  TemplateBucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Description: S3 bucket name for the template assets. Template bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  TemplateBucketPrefix:
+    AllowedPattern: ^[0-9a-zA-Z-]+(/[0-9a-zA-Z-]+)*$
+    ConstraintDescription: Template key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/). It cannot start or end
+      with forward slash (/) because they are automatically appended.
+    Description: S3 key prefix for the template assets. Template key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/). It cannot start or end with forward slash (/) because they
+      are automatically appended.
+    Type: String
+
+Conditions:
+  EnableKeyRotation: !Equals [ !Ref EnableKeyRotation, "true"]
+
+Resources:
+  DynamoDBCredstashTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ParentStackName}-credstash"
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+        - AttributeName: version
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+        - AttributeName: version
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref ReadCapacityUnits
+        WriteCapacityUnits: !Ref WriteCapacityUnits
+
+  KeyCredstash:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub Key used for Credstash for ${ParentStackName}-credstash
+      Enabled: true
+      EnableKeyRotation: !Ref EnableKeyRotation
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+            - Sid: "Enable IAM User Permissions"
+              Effect: Allow
+              Principal:
+                AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+              Action: "kms:*"
+              Resource: "*"
+
+  KeyCredstashAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${ParentStackName}-credstash
+      TargetKeyId:
+        Ref: KeyCredstash
+
+  CredstashCredentialsResourceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: credstash-read-write-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:GenerateDataKey"
+                  - "kms:Decrypt"
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyCredstash}"
+              - Effect: Allow
+                Action:
+                  - "dynamodb:GetItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:PutItem"
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBCredstashTable}"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  CredstashCredentialResourceFunction:
+    Type: "AWS::Lambda::Function"
+    DependsOn: CredstashCredentialsResourceRole
+    Properties:
+      FunctionName: CredstashCredentialResourceFunction
+      Code:
+        S3Bucket: !Ref TemplateBucketName
+        S3Key: !Sub ${TemplateBucketPrefix}/functions/credstash.zip
+      Description: Create required keys in Credstash
+      Handler: credentials.lambda_handler
+      MemorySize: 1536
+      Role: !GetAtt CredstashCredentialsResourceRole.Arn
+      Runtime: python2.7
+      Timeout: 300
+
+Outputs:
+  KeyCredstashAlias:
+    Value: !Ref KeyCredstashAlias
+    Export:
+      Name: !Sub "${ParentStackName}-credstash-key"
+  KeyCredstash:
+    Value: !Ref KeyCredstash
+  TableCredstash:
+    Value: !Ref DynamoDBCredstashTable
+  TableName:
+    Value: !Sub "${ParentStackName}-credstash"
+    Export:
+      Name: !Sub "${ParentStackName}-credstash"
+  CredstashCredentialResource:
+    Value: !GetAtt CredstashCredentialResourceFunction.Arn
+    Export:
+      Name: !Sub "${ParentStackName}-credstash-resource"
