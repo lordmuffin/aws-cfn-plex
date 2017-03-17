@@ -105,6 +105,10 @@ Resources:
               python26-pip: []
               git-all: []
               encfs: []
+              gcc: []
+              libffi-devel: []
+              python-devel: []
+              openssl-devel: []
             python:
               ansible: []
           files:
@@ -119,12 +123,9 @@ Resources:
             plexstartup:
               command:
                 "Fn::Join": ["", ["chkconfig --add plexmediaserver && chkconfig plexmediaserver on"]]
-            clonegitrepo:
+            plexstartup:
               command:
-                "Fn::Join": ["", ["git clone https://github.com/lordmuffin/aws-cfn-plex.git /plex/aws-cfn-plex"]]
-            ansibleplaybook:
-              command:
-                "Fn::Join": ["", ["ansible-playbook /plex/aws-cfn-plex/playbooks/plex.yml"]]
+                "Fn::Join": ["", ["pip install credstash"]]
     Properties:
       ImageId: !FindInMap [AWSRegion2AMI, !Ref 'AWS::Region', !Ref OperatingSystem]
       InstanceType: !Ref InstanceType
